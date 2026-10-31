@@ -1,9 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { BusinessInput, RabbitState, AIAnalysisReport } from './types';
+import type { BusinessInput, RabbitState, AIAnalysisReport, User } from './types';
 import { PRESET_BUSINESSES } from './services/presetData';
 import { runBusinessAnalysis, runBusinessAnalysisAsync } from './services/analysisEngine';
+import { getCurrentUser, logout } from './services/authService';
 import { RabbitCanvas } from './components/rabbit/RabbitCanvas';
 import { RabbitControls } from './components/rabbit/RabbitControls';
+
+// Auth Components
+import { AuthPage } from './components/auth/AuthPage';
 
 // Idea Validation Components
 import { ValidationLandingScreen } from './components/validation/ValidationLandingScreen';
@@ -43,10 +47,14 @@ import {
   ListTodo,
   PieChart,
   CheckCircle2,
-  Lightbulb
+  Lightbulb,
+  LogOut
 } from 'lucide-react';
 
 export function App() {
+  // Auth state
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
   const [selectedPresetKey, setSelectedPresetKey] = useState<string>('ai_saas');
   const [businessInput, setBusinessInput] = useState<BusinessInput>(PRESET_BUSINESSES['ai_saas']);
   const [rabbitState, setRabbitState] = useState<RabbitState>('idle');
@@ -64,6 +72,14 @@ export function App() {
 
   const [highlightCardId, setHighlightCardId] = useState<string | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
 
   const baseReport: AIAnalysisReport = useMemo(() => {
     return runBusinessAnalysis(businessInput);
@@ -113,6 +129,16 @@ export function App() {
     handleStartValidation(updatedInput);
   };
 
+  const handleLogout = () => {
+    logout();
+    setCurrentUser(null);
+  };
+
+  // Auth gate - show AuthPage if no user is logged in
+  if (!currentUser) {
+    return <AuthPage onAuthSuccess={(user) => setCurrentUser(user)} />;
+  }
+
   const navItems = [
     { id: 'validation', label: 'Idea Validation Results', icon: CheckCircle2 },
     { id: 'overview', label: 'Business Overview', icon: LayoutDashboard },
@@ -140,9 +166,28 @@ export function App() {
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center mr-3 shadow-sm shadow-blue-600/20">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <span className="text-lg font-bold text-gray-900 block leading-none">Millennium<span className="text-blue-600">IQ</span></span>
             <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Idea Validator AI</span>
+          </div>
+        </div>
+        
+        {/* User Info */}
+        <div className="px-6 py-3 border-b border-gray-200 bg-gray-50/50">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <span className="text-xs font-bold text-blue-600">
+                {currentUser.isGuest ? 'G' : currentUser.fullName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-900 truncate">
+                {currentUser.fullName}
+              </p>
+              <p className="text-[10px] text-gray-500 truncate">
+                {currentUser.isGuest ? 'Guest Account' : currentUser.email}
+              </p>
+            </div>
           </div>
         </div>
         
@@ -184,6 +229,13 @@ export function App() {
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all">
               <Settings className="w-4 h-4 text-gray-400" />
               Settings
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 hover:bg-red-50 transition-all"
+            >
+              <LogOut className="w-4 h-4 text-red-600" />
+              Logout
             </button>
           </div>
         </nav>

@@ -355,3 +355,17 @@ export interface LSTMForecastResult {
   horizon_summary: { next_1_month: number; next_3_month: number; next_6_month: number; next_12_month: number; total_annual_forecast: number; };
   model_architecture: string; mape_error_rate: string; r2_score: number;
 }
+
+// ── Authentication Types ─────────────────────────────────────────────────────
+
+export interface User {
+  email: string;
+  fullName: string;
+  isGuest: boolean;
+}
+
+export interface StoredUser {
+  email: string;
+  password: string;
+  fullName: string;
+}
